@@ -253,13 +253,13 @@ function ClientForm({
   const [nrc_number, setNrc] = useState("");
   const [phone, setPhone] = useState("");
 
-  // reset when dialog opens
-  useState(() => {});
-  if (open && editing && full_name === "" && nrc_number === "" && phone === "") {
-    setFullName(editing.full_name);
-    setNrc(editing.nrc_number);
-    setPhone(editing.phone);
-  }
+  useEffect(() => {
+    if (open) {
+      setFullName(editing?.full_name ?? "");
+      setNrc(editing?.nrc_number ?? "");
+      setPhone(editing?.phone ?? "");
+    }
+  }, [open, editing]);
 
   const reset = () => {
     setFullName("");

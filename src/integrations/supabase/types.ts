@@ -14,7 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      clients: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          nrc_number: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          nrc_number: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          nrc_number?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      loans: {
+        Row: {
+          amount_kwacha: number
+          borrowed_date: string
+          client_id: string
+          created_at: string
+          id: string
+          paid: boolean
+          paid_at: string | null
+          repay_date: string
+          user_id: string
+        }
+        Insert: {
+          amount_kwacha: number
+          borrowed_date: string
+          client_id: string
+          created_at?: string
+          id?: string
+          paid?: boolean
+          paid_at?: string | null
+          repay_date: string
+          user_id: string
+        }
+        Update: {
+          amount_kwacha?: number
+          borrowed_date?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          paid?: boolean
+          paid_at?: string | null
+          repay_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loans_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

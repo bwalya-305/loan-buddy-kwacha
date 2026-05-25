@@ -9,38 +9,137 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedLoansRouteImport } from './routes/_authenticated/loans'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedLoansNewRouteImport } from './routes/_authenticated/loans.new'
+import { Route as AuthenticatedClientsIdRouteImport } from './routes/_authenticated/clients.$id'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedLoansRoute = AuthenticatedLoansRouteImport.update({
+  id: '/loans',
+  path: '/loans',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedLoansNewRoute = AuthenticatedLoansNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AuthenticatedLoansRoute,
+} as any)
+const AuthenticatedClientsIdRoute = AuthenticatedClientsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AuthenticatedClientsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/clients': typeof AuthenticatedClientsRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/loans': typeof AuthenticatedLoansRouteWithChildren
+  '/clients/$id': typeof AuthenticatedClientsIdRoute
+  '/loans/new': typeof AuthenticatedLoansNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/clients': typeof AuthenticatedClientsRouteWithChildren
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/loans': typeof AuthenticatedLoansRouteWithChildren
+  '/clients/$id': typeof AuthenticatedClientsIdRoute
+  '/loans/new': typeof AuthenticatedLoansNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_authenticated/clients': typeof AuthenticatedClientsRouteWithChildren
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/loans': typeof AuthenticatedLoansRouteWithChildren
+  '/_authenticated/clients/$id': typeof AuthenticatedClientsIdRoute
+  '/_authenticated/loans/new': typeof AuthenticatedLoansNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/clients'
+    | '/dashboard'
+    | '/loans'
+    | '/clients/$id'
+    | '/loans/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/login'
+    | '/clients'
+    | '/dashboard'
+    | '/loans'
+    | '/clients/$id'
+    | '/loans/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/clients'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/loans'
+    | '/_authenticated/clients/$id'
+    | '/_authenticated/loans/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +147,87 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/loans': {
+      id: '/_authenticated/loans'
+      path: '/loans'
+      fullPath: '/loans'
+      preLoaderRoute: typeof AuthenticatedLoansRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/clients': {
+      id: '/_authenticated/clients'
+      path: '/clients'
+      fullPath: '/clients'
+      preLoaderRoute: typeof AuthenticatedClientsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/loans/new': {
+      id: '/_authenticated/loans/new'
+      path: '/new'
+      fullPath: '/loans/new'
+      preLoaderRoute: typeof AuthenticatedLoansNewRouteImport
+      parentRoute: typeof AuthenticatedLoansRoute
+    }
+    '/_authenticated/clients/$id': {
+      id: '/_authenticated/clients/$id'
+      path: '/$id'
+      fullPath: '/clients/$id'
+      preLoaderRoute: typeof AuthenticatedClientsIdRouteImport
+      parentRoute: typeof AuthenticatedClientsRoute
+    }
   }
 }
 
+interface AuthenticatedClientsRouteChildren {
+  AuthenticatedClientsIdRoute: typeof AuthenticatedClientsIdRoute
+}
+
+const AuthenticatedClientsRouteChildren: AuthenticatedClientsRouteChildren = {
+  AuthenticatedClientsIdRoute: AuthenticatedClientsIdRoute,
+}
+
+const AuthenticatedClientsRouteWithChildren =
+  AuthenticatedClientsRoute._addFileChildren(AuthenticatedClientsRouteChildren)
+
+interface AuthenticatedLoansRouteChildren {
+  AuthenticatedLoansNewRoute: typeof AuthenticatedLoansNewRoute
+}
+
+const AuthenticatedLoansRouteChildren: AuthenticatedLoansRouteChildren = {
+  AuthenticatedLoansNewRoute: AuthenticatedLoansNewRoute,
+}
+
+const AuthenticatedLoansRouteWithChildren =
+  AuthenticatedLoansRoute._addFileChildren(AuthenticatedLoansRouteChildren)
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedClientsRoute: typeof AuthenticatedClientsRouteWithChildren
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedLoansRoute: typeof AuthenticatedLoansRouteWithChildren
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedClientsRoute: AuthenticatedClientsRouteWithChildren,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedLoansRoute: AuthenticatedLoansRouteWithChildren,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

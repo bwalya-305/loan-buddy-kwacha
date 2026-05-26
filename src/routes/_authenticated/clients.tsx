@@ -140,18 +140,14 @@ function ClientsPage() {
             <h3 className="font-display text-lg">
               {clients.length === 0 ? "No clients yet" : "No matches"}
             </h3>
-            <p className="text-muted-foreground text-sm mt-1 mb-4">
+            <p className="text-muted-foreground text-sm mt-1">
               {clients.length === 0
                 ? "Add your first client to start tracking loans."
                 : "Try a different search."}
             </p>
-            {clients.length === 0 && (
-              <Button onClick={() => setOpenForm(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Add client
-              </Button>
-            )}
           </CardContent>
         </Card>
+
       ) : (
         <div className="grid gap-3">
           {filtered.map((c) => (

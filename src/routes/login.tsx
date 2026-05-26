@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Banknote, Loader2 } from "lucide-react";
+import { Banknote, CheckCircle2, Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    confirmed: search.confirmed === "1" || search.confirmed === 1 || search.confirmed === true,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — MoWa Loans" },
@@ -27,10 +30,21 @@ const schema = z.object({
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { confirmed } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmedBanner, setConfirmedBanner] = useState(false);
+
+  useEffect(() => {
+    if (confirmed) {
+      setConfirmedBanner(true);
+      setMode("signin");
+      // Clean the param from the URL so refreshes don't keep showing the banner.
+      navigate({ to: "/login", search: {}, replace: true });
+    }
+  }, [confirmed, navigate]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -51,7 +65,7 @@ function LoginPage() {
         const { error } = await supabase.auth.signUp({
           email: parsed.data.email,
           password: parsed.data.password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: `${window.location.origin}/login?confirmed=1` },
         });
         if (error) throw error;
         toast.success("Account created. Check your email to confirm, then sign in.");
@@ -106,6 +120,19 @@ function LoginPage() {
               ? "Sign in to access your loan records."
               : "Set up your private MoWa Loans workspace."}
           </p>
+
+          {confirmedBanner && (
+            <div
+              role="status"
+              className="mb-6 flex items-start gap-3 rounded-md border border-success/30 bg-success/10 text-success-foreground p-4"
+            >
+              <CheckCircle2 className="h-5 w-5 text-success mt-0.5 shrink-0" />
+              <div className="text-sm text-foreground">
+                <div className="font-medium">Email confirmed</div>
+                <div className="text-muted-foreground">Please sign in to continue.</div>
+              </div>
+            </div>
+          )}
 
           <Tabs value={mode} onValueChange={(v) => setMode(v as any)} className="mb-6">
             <TabsList className="grid w-full grid-cols-2">

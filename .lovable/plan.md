@@ -1,55 +1,37 @@
+## Goal
 
-# MoWa Loans — Loan Client Tracker
+1. After confirming the signup email, send the user back into MoWa Loans (the Login page) with a clear "Email confirmed — please sign in" message.
+2. Remove the duplicated action button on the Clients and Loans pages so each page has only one primary "Add client" / "New loan" button.
 
-A simple, private dashboard for tracking borrowers, loans, and repayment amounts (40% flat interest), built for users of any tech background.
+## Changes
 
-## What you'll get
+### 1. Email confirmation redirect → Login page with success message
 
-- **Secure login** (email + password) so only you see client data
-- **Clients list** with full name, NRC number, phone
-- **Loans** linked to clients: amount (ZMW), date borrowed, expected repay date, auto-calculated repay amount (amount × 1.4)
-- **Dashboard** with totals: active loans, total lent, total expected back, overdue count
-- **Status badges** on each loan: Active / Due soon (≤7 days) / Overdue / Paid
-- **Mark as paid** with one click
-- **Search & filter** by name, NRC, or status
+**`src/routes/login.tsx`**
+- Update the `signUp()` call so `emailRedirectTo` points to the login page specifically:
+  `emailRedirectTo: ${window.location.origin}/login?confirmed=1`
+- On mount, read the `confirmed` query param. If present:
+  - Show a green success banner above the form: "Email confirmed. Please sign in to continue."
+  - Make sure the form is in "Sign in" mode (not Sign up).
+  - Clean the param from the URL afterwards so refreshes don't keep showing the banner.
+- Keep the existing "already signed in → /dashboard" redirect untouched (so if Supabase auto-signs them in after confirmation, they still go straight to the app; otherwise they see the friendly message).
 
-## Design direction
+Tiny addition to `createFileRoute("/login")`: add `validateSearch` to type the optional `confirmed` flag.
 
-- Palette: **Emerald Prestige** — deep emerald (#064e3b), emerald (#0d7a5f), gold accent (#c9a84c), cream surface (#f5f0e0). Trustworthy, premium finance feel.
-- Typography: **Sora** (headings) + **Manrope** (body) — modern, highly legible
-- UX principles for mixed tech skill levels:
-  - Big tap targets, plain-English labels ("Amount borrowed (ZMW)", not "Principal")
-  - ZMW currency formatted with thousands separators (K 5,000.00)
-  - Empty states explain the next step ("No clients yet — add your first client")
-  - Confirmation dialogs before delete / mark paid
-  - Mobile-friendly cards on small screens, table on desktop
-  - Toast feedback after every action
+### 2. Remove duplicate buttons
 
-## Pages
+**`src/routes/_authenticated/clients.tsx`**
+- Header keeps the single "Add client" button (top right).
+- Empty state ("No clients yet") removes its own "Add client" button — keep only the icon, title, and helper text. The user can use the header button.
 
-```
-/login           — sign in / sign up
-/                — dashboard (KPIs + recent loans)
-/clients         — list, add, edit, delete clients
-/clients/:id     — client profile + their loan history
-/loans           — all loans with filters
-/loans/new       — add loan form (auto-shows repay amount as you type)
-```
+**`src/routes/_authenticated/loans.tsx`**
+- Header keeps the single "New loan" button.
+- Empty state ("No loans to show") removes its own "New loan" button.
 
-## Technical details
+No other UI, copy, or behavior changes.
 
-- **Auth**: Lovable Cloud email/password. Protected routes under `_authenticated/`. Public `/login` only.
-- **Database** (Lovable Cloud, RLS-protected so each user only sees their own records):
-  - `clients` — id, user_id, full_name, nrc_number, phone, created_at
-  - `loans` — id, user_id, client_id, amount_kwacha (numeric), borrowed_date, repay_date, paid (bool), paid_at, created_at
-  - Interest is fixed at 40%, computed in the UI as `amount × 1.4` (no need to store; easy to change later)
-- **Validation**: Zod on all forms (NRC format, phone min length, amount > 0, repay_date ≥ borrowed_date)
-- **Data fetching**: TanStack Query + server functions
-- **No profile table needed** (no usernames/avatars — just the auth account)
+## Out of scope
 
-## Out of scope (can add later)
-
-- Payment history / partial payments
-- SMS reminders to borrowers
-- Exports (CSV/PDF)
-- Multi-user roles (loan officers)
+- No changes to authentication providers, auto-confirm settings, or email templates.
+- No changes to the sidebar "New loan" shortcut (that lives in the layout, not on the Loans page itself, so it isn't a duplicate).
+- No business-logic, schema, or interest-calculation changes.

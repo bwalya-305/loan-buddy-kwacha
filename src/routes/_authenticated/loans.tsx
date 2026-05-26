@@ -145,20 +145,14 @@ function LoansPage() {
           <CardContent className="py-14 text-center">
             <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <h3 className="font-display text-lg">No loans to show</h3>
-            <p className="text-muted-foreground text-sm mt-1 mb-4">
+            <p className="text-muted-foreground text-sm mt-1">
               {loans.length === 0
                 ? "Record your first loan to get started."
                 : "Try a different filter or search."}
             </p>
-            {loans.length === 0 && (
-              <Link to="/loans/new">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" /> New loan
-                </Button>
-              </Link>
-            )}
           </CardContent>
         </Card>
+
       ) : (
         <div className="grid gap-3">
           {filtered.map((l) => {

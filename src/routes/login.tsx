@@ -77,7 +77,11 @@ function LoginPage() {
         navigate({ to: "/dashboard" });
       }
     } catch (err: any) {
-      toast.error(err.message ?? "Something went wrong");
+      toast.error(
+        import.meta.env.DEV
+          ? (err.message ?? "Something went wrong")
+          : "Sign-in failed. Please check your credentials and try again."
+      );
     } finally {
       setBusy(false);
     }

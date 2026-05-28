@@ -43,9 +43,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight">Something went wrong</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {import.meta.env.DEV ? error.message : "An unexpected error occurred. Please try again."}
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -85,6 +83,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Simple, private loan & client tracking for your lending business.",
       },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "MoWa Loans — Loan Client Tracker" },
+      { name: "description", content: "LoanEase Tracker manages loan clients, tracks loan details, and calculates repayment amounts." },
+      { property: "og:description", content: "LoanEase Tracker manages loan clients, tracks loan details, and calculates repayment amounts." },
+      { name: "twitter:description", content: "LoanEase Tracker manages loan clients, tracks loan details, and calculates repayment amounts." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/32ce67a5-479f-4fe2-96ae-1ca9dca7a4ce/id-preview-652f4747--931b8364-9feb-418d-8f0f-18ef2875a08a.lovable.app-1779971403636.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/32ce67a5-479f-4fe2-96ae-1ca9dca7a4ce/id-preview-652f4747--931b8364-9feb-418d-8f0f-18ef2875a08a.lovable.app-1779971403636.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

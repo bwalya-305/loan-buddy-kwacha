@@ -73,7 +73,7 @@ function LoansPage() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Loan updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
   });
 
   const deleteLoan = useMutation({
@@ -86,7 +86,7 @@ function LoansPage() {
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Loan deleted");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
   });
 
   const filtered = loans.filter((l) => {

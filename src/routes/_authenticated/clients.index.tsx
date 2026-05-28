@@ -89,7 +89,7 @@ function ClientsPage() {
       toast.success("Client deleted");
       setDeleting(null);
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
   });
 
   const filtered = clients.filter((c) => {
@@ -284,7 +284,7 @@ function ClientForm({
       onOpenChange(false);
       reset();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
   });
 
   const submit = (e: React.FormEvent) => {

@@ -71,7 +71,7 @@ function ClientDetail() {
       qc.invalidateQueries({ queryKey: ["loans"] });
       toast.success("Loan updated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
   });
 
   if (isLoading) return <div className="text-muted-foreground py-12 text-center">Loading…</div>;

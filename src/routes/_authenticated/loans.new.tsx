@@ -96,7 +96,7 @@ function NewLoanPage() {
       toast.success("Loan recorded");
       navigate({ to: "/loans" });
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
   });
 
   return (

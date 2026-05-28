@@ -24,7 +24,7 @@ import {
 import { calcRepay, formatKwacha, loanStatus, type LoanStatus } from "@/lib/loan-utils";
 import { StatusBadge } from "./dashboard";
 
-export const Route = createFileRoute("/_authenticated/loans")({
+export const Route = createFileRoute("/_authenticated/loans/")({
   head: () => ({ meta: [{ title: "Loans — MoWa Loans" }] }),
   component: LoansPage,
 });

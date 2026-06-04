@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Banknote, LayoutDashboard, Users, FileText, LogOut, Menu, X, Plus } from "lucide-react";
+import { Banknote, LayoutDashboard, Users, FileText, LogOut, Menu, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";

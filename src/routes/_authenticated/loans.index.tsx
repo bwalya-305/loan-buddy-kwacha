@@ -68,12 +68,12 @@ function LoansPage() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["loans"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Loan updated");
+      toast.success(variables.paid ? "Loan marked as paid" : "Payment status reverted");
     },
-    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Failed to update loan. Please try again."),
   });
 
   const deleteLoan = useMutation({
@@ -84,9 +84,9 @@ function LoansPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["loans"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Loan deleted");
+      toast.success("Loan deleted successfully");
     },
-    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Failed to delete loan. Please try again."),
   });
 
   const filtered = loans.filter((l) => {

@@ -93,10 +93,10 @@ function NewLoanPage() {
       qc.invalidateQueries({ queryKey: ["loans"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["client", client_id] });
-      toast.success("Loan recorded");
+      toast.success("Loan created successfully");
       navigate({ to: "/loans" });
     },
-    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Failed to create loan. Please try again."),
   });
 
   return (

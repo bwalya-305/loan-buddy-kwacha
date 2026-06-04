@@ -65,13 +65,13 @@ function ClientDetail() {
         .eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["client", id] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["loans"] });
-      toast.success("Loan updated");
+      toast.success(variables.paid ? "Loan marked as paid" : "Payment status reverted");
     },
-    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Something went wrong. Please try again."),
+    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Failed to update loan. Please try again."),
   });
 
   if (isLoading) return <div className="text-muted-foreground py-12 text-center">Loading…</div>;

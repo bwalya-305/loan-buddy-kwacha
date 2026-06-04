@@ -4,7 +4,7 @@ import { Banknote, LayoutDashboard, Users, FileText, LogOut, Menu, X } from "luc
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
-import { Button } from "@/components/ui/button";
+
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Banknote, LayoutDashboard, Users, FileText, LogOut, Menu, X, Plus } from "lucide-react";
+import { Banknote, LayoutDashboard, Users, FileText, LogOut, Menu, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/use-auth";
-import { Button } from "@/components/ui/button";
+
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -110,11 +110,7 @@ function AuthLayout() {
           </nav>
 
           <div className="p-4 border-t border-sidebar-border space-y-3">
-            <Link to="/loans/new">
-              <Button className="w-full bg-gold text-gold-foreground hover:bg-gold/90">
-                <Plus className="h-4 w-4 mr-2" /> New loan
-              </Button>
-            </Link>
+
             <div className="flex items-center justify-between text-xs">
               <span className="truncate text-sidebar-foreground/70">{user.email}</span>
               <button

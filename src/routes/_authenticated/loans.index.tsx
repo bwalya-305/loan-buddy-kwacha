@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { calcInterest } from "@/lib/loan-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { calcRepay, formatKwacha, loanStatus, type LoanStatus } from "@/lib/loan-utils";
+import { calcInterest, calcRepay, formatKwacha, loanStatus, type LoanStatus } from "@/lib/loan-utils";
 import { StatusBadge } from "./dashboard";
 
 export const Route = createFileRoute("/_authenticated/loans/")({

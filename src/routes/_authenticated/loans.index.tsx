@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, CheckCircle2, FileText, Trash2 } from "lucide-react";
+import { Plus, Search, CheckCircle2, FileText, Trash2, Download } from "lucide-react";
 import { format } from "date-fns";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { calcRepay, formatKwacha, loanStatus, type LoanStatus } from "@/lib/loan-utils";
+import { calcInterest, calcRepay, formatKwacha, loanStatus, type LoanStatus } from "@/lib/loan-utils";
 import { StatusBadge } from "./dashboard";
 
 export const Route = createFileRoute("/_authenticated/loans/")({
@@ -101,6 +101,52 @@ function LoansPage() {
     return loanStatus(l) === filter;
   });
 
+  const exportCsv = () => {
+    if (filtered.length === 0) {
+      toast.error("No loans to export");
+      return;
+    }
+    const headers = [
+      "Client",
+      "Phone",
+      "Amount (K)",
+      "Interest (K)",
+      "Repay total (K)",
+      "Borrowed date",
+      "Repay date",
+      "Status",
+      "Paid",
+      "Paid at",
+    ];
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = filtered.map((l) => {
+      const amount = Number(l.amount_kwacha);
+      return [
+        l.client?.full_name ?? "Unknown",
+        l.client?.phone ?? "",
+        amount.toFixed(2),
+        calcInterest(amount).toFixed(2),
+        calcRepay(amount).toFixed(2),
+        l.borrowed_date,
+        l.repay_date,
+        loanStatus(l),
+        l.paid ? "Yes" : "No",
+        l.paid_at ? format(new Date(l.paid_at), "yyyy-MM-dd HH:mm") : "",
+      ].map((v) => escape(String(v))).join(",");
+    });
+    const csv = [headers.map(escape).join(","), ...rows].join("\n");
+    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `loans-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filtered.length} loan${filtered.length === 1 ? "" : "s"}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -110,11 +156,16 @@ function LoansPage() {
             {loans.length} total · interest fixed at 40%
           </p>
         </div>
-        <Link to="/loans/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" /> New loan
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportCsv} disabled={isLoading || loans.length === 0}>
+            <Download className="h-4 w-4 mr-2" /> Export CSV
           </Button>
-        </Link>
+          <Link to="/loans/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" /> New loan
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-3">

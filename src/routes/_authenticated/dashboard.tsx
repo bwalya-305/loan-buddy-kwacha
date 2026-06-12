@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, TrendingUp, AlertTriangle, Users, Plus, ArrowRight } from "lucide-react";
+import { Banknote, TrendingUp, AlertTriangle, Users, Plus, ArrowRight, BellRing } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { calcRepay, formatKwacha, loanStatus, statusLabel } from "@/lib/loan-utils";
+import { calcRepay, daysUntil, formatKwacha, loanStatus, statusLabel } from "@/lib/loan-utils";
 import { format } from "date-fns";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — MoWa Loans" }] }),
@@ -79,6 +82,41 @@ function Dashboard() {
 
   const recent = loans.slice(0, 6);
 
+  const dueSoon = active
+    .map((l) => ({ loan: l, days: daysUntil(l.repay_date) }))
+    .filter((x) => x.days <= 3)
+    .sort((a, b) => a.days - b.days);
+
+  const notifiedRef = useRef(false);
+  useEffect(() => {
+    if (notifiedRef.current || dueSoon.length === 0) return;
+    notifiedRef.current = true;
+    const overdue = dueSoon.filter((x) => x.days < 0).length;
+    const today = dueSoon.filter((x) => x.days === 0).length;
+    const upcoming = dueSoon.length - overdue - today;
+    const parts: string[] = [];
+    if (overdue) parts.push(`${overdue} overdue`);
+    if (today) parts.push(`${today} due today`);
+    if (upcoming) parts.push(`${upcoming} due in next 3 days`);
+    toast.warning(`Reminder: ${parts.join(" • ")}`, {
+      description: "Check the Due soon section below.",
+      duration: 6000,
+    });
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("MoWa Loans reminder", { body: parts.join(" • ") });
+    }
+  }, [dueSoon.length]);
+
+  const requestNotifications = async () => {
+    if (!("Notification" in window)) {
+      toast.error("Browser notifications are not supported here.");
+      return;
+    }
+    const res = await Notification.requestPermission();
+    if (res === "granted") toast.success("Notifications enabled");
+    else toast.error("Notifications blocked");
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -117,6 +155,55 @@ function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {dueSoon.length > 0 && (
+        <Card className="border-warning/40 bg-warning/5">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-warning-foreground" />
+              <CardTitle className="font-display">Due soon — next 3 days</CardTitle>
+            </div>
+            <Button size="sm" variant="outline" onClick={requestNotifications}>
+              Enable browser alerts
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {dueSoon.map(({ loan: l, days }) => {
+                const label =
+                  days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? "Due today" : `In ${days}d`;
+                return (
+                  <div key={l.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{l.client?.full_name ?? "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {l.client?.phone ?? ""} • Due {format(new Date(l.repay_date), "d MMM yyyy")}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-medium">{formatKwacha(calcRepay(Number(l.amount_kwacha)))}</div>
+                        <div className="text-xs text-muted-foreground">repay due</div>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={
+                          days < 0
+                            ? "bg-destructive/15 text-destructive border-destructive/30"
+                            : "bg-warning/20 text-warning-foreground border-warning/40"
+                        }
+                      >
+                        {label}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

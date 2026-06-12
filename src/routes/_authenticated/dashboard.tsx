@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Banknote, TrendingUp, AlertTriangle, Users, Plus, ArrowRight } from "lucide-react";
+import { Banknote, TrendingUp, AlertTriangle, Users, Plus, ArrowRight, BellRing } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { calcRepay, formatKwacha, loanStatus, statusLabel } from "@/lib/loan-utils";
+import { calcRepay, daysUntil, formatKwacha, loanStatus, statusLabel } from "@/lib/loan-utils";
 import { format } from "date-fns";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — MoWa Loans" }] }),

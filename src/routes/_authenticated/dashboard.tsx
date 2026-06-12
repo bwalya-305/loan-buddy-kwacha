@@ -82,6 +82,41 @@ function Dashboard() {
 
   const recent = loans.slice(0, 6);
 
+  const dueSoon = active
+    .map((l) => ({ loan: l, days: daysUntil(l.repay_date) }))
+    .filter((x) => x.days <= 3)
+    .sort((a, b) => a.days - b.days);
+
+  const notifiedRef = useRef(false);
+  useEffect(() => {
+    if (notifiedRef.current || dueSoon.length === 0) return;
+    notifiedRef.current = true;
+    const overdue = dueSoon.filter((x) => x.days < 0).length;
+    const today = dueSoon.filter((x) => x.days === 0).length;
+    const upcoming = dueSoon.length - overdue - today;
+    const parts: string[] = [];
+    if (overdue) parts.push(`${overdue} overdue`);
+    if (today) parts.push(`${today} due today`);
+    if (upcoming) parts.push(`${upcoming} due in next 3 days`);
+    toast.warning(`Reminder: ${parts.join(" • ")}`, {
+      description: "Check the Due soon section below.",
+      duration: 6000,
+    });
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("MoWa Loans reminder", { body: parts.join(" • ") });
+    }
+  }, [dueSoon.length]);
+
+  const requestNotifications = async () => {
+    if (!("Notification" in window)) {
+      toast.error("Browser notifications are not supported here.");
+      return;
+    }
+    const res = await Notification.requestPermission();
+    if (res === "granted") toast.success("Notifications enabled");
+    else toast.error("Notifications blocked");
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">

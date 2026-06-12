@@ -156,6 +156,55 @@ function Dashboard() {
         ))}
       </div>
 
+      {dueSoon.length > 0 && (
+        <Card className="border-warning/40 bg-warning/5">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-warning-foreground" />
+              <CardTitle className="font-display">Due soon — next 3 days</CardTitle>
+            </div>
+            <Button size="sm" variant="outline" onClick={requestNotifications}>
+              Enable browser alerts
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {dueSoon.map(({ loan: l, days }) => {
+                const label =
+                  days < 0 ? `${Math.abs(days)}d overdue` : days === 0 ? "Due today" : `In ${days}d`;
+                return (
+                  <div key={l.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{l.client?.full_name ?? "Unknown"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {l.client?.phone ?? ""} • Due {format(new Date(l.repay_date), "d MMM yyyy")}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <div className="font-medium">{formatKwacha(calcRepay(Number(l.amount_kwacha)))}</div>
+                        <div className="text-xs text-muted-foreground">repay due</div>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={
+                          days < 0
+                            ? "bg-destructive/15 text-destructive border-destructive/30"
+                            : "bg-warning/20 text-warning-foreground border-warning/40"
+                        }
+                      >
+                        {label}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-display">Recent loans</CardTitle>

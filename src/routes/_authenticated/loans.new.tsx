@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { calcInterest, calcRepay, formatKwacha } from "@/lib/loan-utils";
+import {
+  calcInterest,
+  calcRepay,
+  formatKwacha,
+  generateSchedule,
+  type InstallmentFrequency,
+} from "@/lib/loan-utils";
 
 const searchSchema = z.object({
   client: z.string().optional(),
@@ -53,6 +60,12 @@ function NewLoanPage() {
   const [borrowed_date, setBorrowed] = useState(today);
   const [repay_date, setRepay] = useState(format(addDays(new Date(), 30), "yyyy-MM-dd"));
 
+  // Installment state
+  const [installmentsOn, setInstallmentsOn] = useState(false);
+  const [installmentCount, setInstallmentCount] = useState(4);
+  const [frequency, setFrequency] = useState<InstallmentFrequency>("monthly");
+  const [firstDate, setFirstDate] = useState(format(addDays(new Date(), 30), "yyyy-MM-dd"));
+
   const { data: clients = [], isLoading: clientsLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
@@ -69,6 +82,21 @@ function NewLoanPage() {
   const repay = useMemo(() => calcRepay(amount), [amount]);
   const interest = useMemo(() => calcInterest(amount), [amount]);
 
+  const schedule = useMemo(
+    () =>
+      installmentsOn && installmentCount >= 2 && repay > 0
+        ? generateSchedule(repay, installmentCount, firstDate, frequency)
+        : [],
+    [installmentsOn, installmentCount, repay, firstDate, frequency],
+  );
+
+  // Sync repay_date to final installment date when schedule is on
+  useEffect(() => {
+    if (installmentsOn && schedule.length > 0) {
+      setRepay(schedule[schedule.length - 1].due_date);
+    }
+  }, [installmentsOn, schedule]);
+
   const mut = useMutation({
     mutationFn: async () => {
       const parsed = formSchema.safeParse({
@@ -78,16 +106,38 @@ function NewLoanPage() {
         repay_date,
       });
       if (!parsed.success) throw new Error(parsed.error.issues[0].message);
+      if (installmentsOn) {
+        if (installmentCount < 2 || installmentCount > 24)
+          throw new Error("Installments must be between 2 and 24");
+        if (new Date(firstDate) < new Date(borrowed_date))
+          throw new Error("First installment must be on or after the borrow date");
+      }
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) throw new Error("Not signed in");
-      const { error } = await supabase.from("loans").insert({
-        user_id: u.user.id,
-        client_id: parsed.data.client_id,
-        amount_kwacha: parsed.data.amount,
-        borrowed_date: parsed.data.borrowed_date,
-        repay_date: parsed.data.repay_date,
-      });
+      const { data: loan, error } = await supabase
+        .from("loans")
+        .insert({
+          user_id: u.user.id,
+          client_id: parsed.data.client_id,
+          amount_kwacha: parsed.data.amount,
+          borrowed_date: parsed.data.borrowed_date,
+          repay_date: parsed.data.repay_date,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+
+      if (installmentsOn && loan) {
+        const rows = schedule.map((r) => ({
+          loan_id: loan.id,
+          user_id: u.user!.id,
+          sequence: r.sequence,
+          due_date: r.due_date,
+          amount_kwacha: r.amount_kwacha,
+        }));
+        const { error: insErr } = await supabase.from("loan_installments").insert(rows);
+        if (insErr) throw insErr;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["loans"] });
@@ -96,12 +146,16 @@ function NewLoanPage() {
       toast.success("Loan created successfully");
       navigate({ to: "/loans" });
     },
-    onError: (e: any) => toast.error(import.meta.env.DEV ? e.message : "Failed to create loan. Please try again."),
+    onError: (e: any) =>
+      toast.error(import.meta.env.DEV ? e.message : "Failed to create loan. Please try again."),
   });
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <Link to="/loans" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/loans"
+        className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeft className="h-4 w-4 mr-1" /> Back to loans
       </Link>
 
@@ -185,7 +239,9 @@ function NewLoanPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="repay">Expected repay date</Label>
+                <Label htmlFor="repay">
+                  {installmentsOn ? "Final installment date" : "Expected repay date"}
+                </Label>
                 <Input
                   id="repay"
                   type="date"
@@ -193,9 +249,109 @@ function NewLoanPage() {
                   onChange={(e) => setRepay(e.target.value)}
                   min={borrowed_date}
                   className="h-12"
+                  disabled={installmentsOn}
                   required
                 />
+                {installmentsOn && (
+                  <p className="text-xs text-muted-foreground">
+                    Set automatically from your installment schedule.
+                  </p>
+                )}
               </div>
+            </div>
+
+            {/* Installments section */}
+            <div className="rounded-lg border p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="installments-toggle" className="text-base">
+                    Pay in installments
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Split the repayment into a schedule the client pays over time.
+                  </p>
+                </div>
+                <Switch
+                  id="installments-toggle"
+                  checked={installmentsOn}
+                  onCheckedChange={setInstallmentsOn}
+                />
+              </div>
+
+              {installmentsOn && (
+                <div className="space-y-4 pt-2 border-t">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="count">Number of installments</Label>
+                      <Input
+                        id="count"
+                        type="number"
+                        min={2}
+                        max={24}
+                        value={installmentCount}
+                        onChange={(e) =>
+                          setInstallmentCount(Math.max(2, Math.min(24, Number(e.target.value) || 2)))
+                        }
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="freq">Frequency</Label>
+                      <Select
+                        value={frequency}
+                        onValueChange={(v) => setFrequency(v as InstallmentFrequency)}
+                      >
+                        <SelectTrigger id="freq" className="h-11">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Weekly</SelectItem>
+                          <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="first">First installment date</Label>
+                      <Input
+                        id="first"
+                        type="date"
+                        value={firstDate}
+                        onChange={(e) => setFirstDate(e.target.value)}
+                        min={borrowed_date}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+
+                  {schedule.length > 0 && (
+                    <div className="rounded-md border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-xs uppercase text-muted-foreground">
+                          <tr>
+                            <th className="text-left px-3 py-2 w-12">#</th>
+                            <th className="text-left px-3 py-2">Due date</th>
+                            <th className="text-right px-3 py-2">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {schedule.map((r) => (
+                            <tr key={r.sequence}>
+                              <td className="px-3 py-2 text-muted-foreground">{r.sequence}</td>
+                              <td className="px-3 py-2">
+                                {format(new Date(r.due_date), "EEE, MMM d, yyyy")}
+                              </td>
+                              <td className="px-3 py-2 text-right font-medium">
+                                {formatKwacha(r.amount_kwacha)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="rounded-lg bg-primary text-primary-foreground p-5">
@@ -207,6 +363,9 @@ function NewLoanPage() {
               </div>
               <div className="text-sm text-primary-foreground/80 mt-2">
                 Principal {formatKwacha(amount)} + 40% interest ({formatKwacha(interest)})
+                {installmentsOn && schedule.length > 0 && (
+                  <> · split into {schedule.length} installments</>
+                )}
               </div>
             </div>
 

@@ -45,3 +45,49 @@ export const statusLabel: Record<LoanStatus, string> = {
   "due-soon": "Due soon",
   active: "Active",
 };
+
+export type InstallmentFrequency = "weekly" | "biweekly" | "monthly";
+
+export type InstallmentRow = {
+  sequence: number;
+  due_date: string; // yyyy-MM-dd
+  amount_kwacha: number;
+};
+
+function addInterval(date: Date, frequency: InstallmentFrequency, steps: number): Date {
+  const d = new Date(date);
+  if (frequency === "weekly") d.setDate(d.getDate() + 7 * steps);
+  else if (frequency === "biweekly") d.setDate(d.getDate() + 14 * steps);
+  else d.setMonth(d.getMonth() + steps);
+  return d;
+}
+
+function fmtDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function generateSchedule(
+  total: number,
+  count: number,
+  firstDate: string,
+  frequency: InstallmentFrequency,
+): InstallmentRow[] {
+  if (count < 1) return [];
+  const cents = Math.round(total * 100);
+  const base = Math.floor(cents / count);
+  const remainder = cents - base * count;
+  const start = new Date(firstDate);
+  const rows: InstallmentRow[] = [];
+  for (let i = 0; i < count; i++) {
+    const portion = i === count - 1 ? base + remainder : base;
+    rows.push({
+      sequence: i + 1,
+      due_date: fmtDate(addInterval(start, frequency, i)),
+      amount_kwacha: portion / 100,
+    });
+  }
+  return rows;
+}

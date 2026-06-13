@@ -41,6 +41,50 @@ export type Database = {
         }
         Relationships: []
       }
+      loan_installments: {
+        Row: {
+          amount_kwacha: number
+          created_at: string
+          due_date: string
+          id: string
+          loan_id: string
+          paid: boolean
+          paid_at: string | null
+          sequence: number
+          user_id: string
+        }
+        Insert: {
+          amount_kwacha: number
+          created_at?: string
+          due_date: string
+          id?: string
+          loan_id: string
+          paid?: boolean
+          paid_at?: string | null
+          sequence: number
+          user_id: string
+        }
+        Update: {
+          amount_kwacha?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          loan_id?: string
+          paid?: boolean
+          paid_at?: string | null
+          sequence?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loan_installments_loan_id_fkey"
+            columns: ["loan_id"]
+            isOneToOne: false
+            referencedRelation: "loans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loans: {
         Row: {
           amount_kwacha: number

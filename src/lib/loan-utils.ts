@@ -56,9 +56,20 @@ export type InstallmentRow = {
 
 function addInterval(date: Date, frequency: InstallmentFrequency, steps: number): Date {
   const d = new Date(date);
-  if (frequency === "weekly") d.setDate(d.getDate() + 7 * steps);
-  else if (frequency === "biweekly") d.setDate(d.getDate() + 14 * steps);
-  else d.setMonth(d.getMonth() + steps);
+  if (frequency === "weekly") {
+    d.setDate(d.getDate() + 7 * steps);
+    return d;
+  }
+  if (frequency === "biweekly") {
+    d.setDate(d.getDate() + 14 * steps);
+    return d;
+  }
+  // Monthly: guard against month-end overflow (e.g. Jan 31 + 1mo -> Feb 28/29).
+  const targetDay = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + steps);
+  const lastDayOfTargetMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(targetDay, lastDayOfTargetMonth));
   return d;
 }
 

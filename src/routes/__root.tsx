@@ -124,9 +124,11 @@ function AuthInvalidator() {
   const router = useRouter();
   const qc = useQueryClient();
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      router.invalidate();
-      qc.invalidateQueries();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        router.invalidate();
+        qc.invalidateQueries();
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [router, qc]);

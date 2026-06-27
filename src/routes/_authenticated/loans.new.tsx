@@ -136,7 +136,11 @@ function NewLoanPage() {
           amount_kwacha: r.amount_kwacha,
         }));
         const { error: insErr } = await supabase.from("loan_installments").insert(rows);
-        if (insErr) throw insErr;
+        if (insErr) {
+          // Roll back the parent loan so we don't leave it without a schedule.
+          await supabase.from("loans").delete().eq("id", loan.id);
+          throw insErr;
+        }
       }
     },
     onSuccess: () => {

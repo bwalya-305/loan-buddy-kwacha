@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search, CheckCircle2, FileText, Trash2, Download } from "lucide-react";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -101,7 +102,7 @@ function LoansPage() {
     return loanStatus(l) === filter;
   });
 
-  const exportCsv = () => {
+  const exportXlsx = () => {
     if (filtered.length === 0) {
       toast.error("No loans to export");
       return;
@@ -118,32 +119,61 @@ function LoansPage() {
       "Paid",
       "Paid at",
     ];
-    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const rows = filtered.map((l) => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    const dataRows = filtered.map((l) => {
       const amount = Number(l.amount_kwacha);
       return [
         l.client?.full_name ?? "Unknown",
         l.client?.phone ?? "",
-        amount.toFixed(2),
-        calcInterest(amount).toFixed(2),
-        calcRepay(amount).toFixed(2),
+        Number(amount.toFixed(2)),
+        Number(calcInterest(amount).toFixed(2)),
+        Number(calcRepay(amount).toFixed(2)),
         l.borrowed_date,
         l.repay_date,
         loanStatus(l),
         l.paid ? "Yes" : "No",
         l.paid_at ? format(new Date(l.paid_at), "yyyy-MM-dd HH:mm") : "",
-      ].map((v) => escape(String(v))).join(",");
+      ];
     });
-    const csv = [headers.map(escape).join(","), ...rows].join("\n");
-    const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `loans-${format(new Date(), "yyyy-MM-dd")}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+
+    const aoa: (string | number)[][] = [
+      ["MoWa Loans"],
+      [`Loan records · exported ${today}`],
+      [],
+      headers,
+      ...dataRows,
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const lastColLetter = XLSX.utils.encode_col(headers.length - 1);
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+    ];
+
+    // Center + bold the title / subtitle / headers
+    const title = ws["A1"];
+    if (title) title.s = { font: { bold: true, sz: 18 }, alignment: { horizontal: "center", vertical: "center" } };
+    const subtitle = ws["A2"];
+    if (subtitle) subtitle.s = { font: { italic: true, sz: 11, color: { rgb: "666666" } }, alignment: { horizontal: "center" } };
+    for (let c = 0; c < headers.length; c++) {
+      const ref = XLSX.utils.encode_cell({ r: 3, c });
+      if (ws[ref]) ws[ref].s = { font: { bold: true }, alignment: { horizontal: "center" } };
+    }
+
+    ws["!cols"] = headers.map((h, i) => {
+      const maxLen = Math.max(
+        h.length,
+        ...dataRows.map((r) => String(r[i] ?? "").length),
+      );
+      return { wch: Math.min(Math.max(maxLen + 2, 12), 32) };
+    });
+    ws["!rows"] = [{ hpt: 26 }, { hpt: 18 }];
+    ws["!ref"] = `A1:${lastColLetter}${aoa.length}`;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Loans");
+    XLSX.writeFile(wb, `MoWa-Loans-loans-${today}.xlsx`);
     toast.success(`Exported ${filtered.length} loan${filtered.length === 1 ? "" : "s"}`);
   };
 
@@ -157,8 +187,8 @@ function LoansPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCsv} disabled={isLoading || loans.length === 0}>
-            <Download className="h-4 w-4 mr-2" /> Export CSV
+          <Button variant="outline" onClick={exportXlsx} disabled={isLoading || loans.length === 0}>
+            <Download className="h-4 w-4 mr-2" /> Export Excel
           </Button>
           <Link to="/loans/new">
             <Button>
